@@ -276,6 +276,10 @@ class Saraadventure(object):
                 goal_txt = "GOAL: Find the portal!" if self.current_level == 1 else "GOAL: Get the trophy!"
                 goal_color = (255, 255, 0) if self.current_level == 1 else (0, 255, 255)
                 self.drow_text(goal_txt, (110, 15), color=goal_color)
+                
+                # Editor Hint (Top Right)
+                hint = "TAB: EDITOR" if self.mode == "GAME" else "TAB: PLAY"
+                self.drow_text(hint, (670, 15), color=(200, 200, 200))
             else:
                 overlay = pygame.Surface((800, 800), pygame.SRCALPHA)
                 overlay.fill((0, 0, 0, 180))
