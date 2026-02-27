@@ -22,13 +22,14 @@ class Hero:
         # Spritesheet info: 4 rows (Down, Up, Right, Left), 3 columns
         self.frame_width = 213 # Approximate 640 / 3
         self.frame_height = 160 # 640 / 4
-        self.scale_size = (48, 48) # Slightly larger for better detail
+        self.scale_size = (96, 96) # Upscaled
         
         self.rect = pygame.Rect(x, y, self.scale_size[0], self.scale_size[1])
         self.direction = 0 # 0: Down, 1: Up, 2: Right, 3: Left
         self.frame = 0
         self.elapsed_time = 0
         self.is_moving = False
+        self.speed = 5 # Even faster
 
     def update(self, delta_time=100):
         if self.is_moving:
@@ -42,16 +43,17 @@ class Hero:
         self.is_moving = False # Reset move flag for next frame
 
     def can_move_to(self, new_x, new_y, map_engine):
-        # Even smaller "feet" box (16x8) for better movement in dense areas
-        feet_w, feet_h = 16, 8
+        # Extreme Forgiveness Box (12x8)
+        # This allows Sara to pass through almost anything that isn't a solid tree trunk
+        feet_w, feet_h = 12, 8
         feet_rect = pygame.Rect(
             new_x + (self.scale_size[0] - feet_w) // 2,
-            new_y + self.scale_size[1] - feet_h - 1,
+            new_y + self.scale_size[1] - feet_h - 4,
             feet_w,
             feet_h
         )
         
-        # Check center and 4 corners for extra safety
+        # 5-point check for collision
         points = [
             feet_rect.topleft, feet_rect.topright,
             feet_rect.bottomleft, feet_rect.bottomright,
@@ -65,29 +67,29 @@ class Hero:
 
     def left(self, map_engine):
         if self.rect.x > 0:
-            if self.can_move_to(self.rect.x - 4, self.rect.y, map_engine):
-                self.rect.x -= 4
+            if self.can_move_to(self.rect.x - self.speed, self.rect.y, map_engine):
+                self.rect.x -= self.speed
             self.direction = 3
             self.is_moving = True
             
     def right(self, map_engine):
-        if self.rect.right < 400:
-            if self.can_move_to(self.rect.x + 4, self.rect.y, map_engine):
-                self.rect.x += 4
+        if self.rect.right < 800:
+            if self.can_move_to(self.rect.x + self.speed, self.rect.y, map_engine):
+                self.rect.x += self.speed
             self.direction = 2
             self.is_moving = True
             
     def up(self, map_engine):
         if self.rect.y > 0:
-            if self.can_move_to(self.rect.x, self.rect.y - 4, map_engine):
-                self.rect.y -= 4
+            if self.can_move_to(self.rect.x, self.rect.y - self.speed, map_engine):
+                self.rect.y -= self.speed
             self.direction = 1
             self.is_moving = True
             
     def down(self, map_engine):
-        if self.rect.bottom < 400:
-            if self.can_move_to(self.rect.x, self.rect.y + 4, map_engine):
-                self.rect.y += 4
+        if self.rect.bottom < 800:
+            if self.can_move_to(self.rect.x, self.rect.y + self.speed, map_engine):
+                self.rect.y += self.speed
             self.direction = 0
             self.is_moving = True
             

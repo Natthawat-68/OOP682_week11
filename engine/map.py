@@ -22,27 +22,27 @@ class Tileset:
                     tile = pygame.Surface((self.source_size, self.source_size), pygame.SRCALPHA)
                     tile.blit(self.image, (0, 0), rect)
                     
-                    # ULTIMATE PURGE: Kill everything that ISN'T the intended art
+                    # ULTIMATE PURGE: Target ANY grid/background artifact
+                    # We kill anything bright and neutral (Grey/White/Grid)
                     for px in range(tile.get_width()):
                         for py in range(tile.get_height()):
                             c = tile.get_at((px, py))
                             
-                            # Calculate properties
                             brightness = (c.r + c.g + c.b) / 3
                             diff = max(abs(c.r - c.g), abs(c.g - c.b), abs(c.r - c.b))
                             
-                            # 1. Kill bright neutrals (White backgrounds, Grid lines, Grey artifacts)
-                            # Bright pixels with low saturation (neutral) are 99% background/noise
-                            is_neutral = diff < 35 # Grey/White/Black scale
+                            # 1. Kill bright neutrals (White/Grey backgrounds and Grids)
+                            # Most grids are between 150 and 255 and are grey-ish
+                            is_neutral = diff < 45 
                             is_bright = brightness > 140
                             
-                            # 2. Kill absolute absolute white/grey even if slightly saturated
-                            is_extreme_white = brightness > 220
+                            # 2. Aggressive Border cleaning (10px) for thick/shifted grids
+                            is_at_border = px < 10 or px >= 70 or py < 10 or py >= 70
                             
-                            if is_extreme_white or (is_neutral and is_bright):
+                            if (is_neutral and is_bright) or (is_at_border and brightness > 180):
                                 tile.set_at((px, py), (0, 0, 0, 0))
                     
-                    # Scale to target size
+                    # Scale to target size (40px)
                     scaled_tile = pygame.transform.scale(tile, (self.target_size, self.target_size))
                     self.tiles.append(scaled_tile)
                 except Exception as e:
@@ -111,9 +111,9 @@ class MapEngine:
             # Scale based on tileset scaling factor
             scale_factor = self.tileset.target_size / self.tileset.source_size
             
-            # Special case for the massive trophy
+            # Special case for the massive trophy (Scaled for 800x800)
             if "trophy" in image_path.lower():
-                scale_w, scale_h = (40, 40)
+                scale_w, scale_h = (80, 80)
             else:
                 scale_w = img.get_width() * scale_factor
                 scale_h = img.get_height() * scale_factor
@@ -135,12 +135,28 @@ class MapEngine:
         return -1
 
     def is_walkable(self, pixel_x, pixel_y):
-        # Boundary check
-        if pixel_x < 0 or pixel_x >= 400 or pixel_y < 0 or pixel_y >= 400:
+        # Boundary check for 800x800
+        if pixel_x < 0 or pixel_x >= 800 or pixel_y < 0 or pixel_y >= 800:
             return False
-        # Check item layer for obstacles (any index >= 0 is a collision)
+            
+        # Define items that are just decorations (Flowers, Grass tufts)
+        WALKABLE_DECORATIONS = [8, 9, 10, 11, 32, 33]
+        
         item_idx = self.get_item_at(pixel_x, pixel_y)
-        return item_idx == -1
+        if item_idx == -1 or item_idx in WALKABLE_DECORATIONS:
+            return True
+        return False
+
+    def update_tile(self, layer_name, grid_x, grid_y, tile_index):
+        layer = self.layers.get(layer_name)
+        if layer and 0 <= grid_x < layer.width and 0 <= grid_y < layer.height:
+            layer.data[grid_y * layer.width + grid_x] = tile_index
+
+    def get_layer_data(self, layer_name):
+        layer = self.layers.get(layer_name)
+        if layer:
+            return list(layer.data)
+        return []
 
     def draw(self, surface):
         for layer_name in ["ground", "path", "item"]:
